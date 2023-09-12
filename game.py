@@ -1,5 +1,10 @@
-from enum import Enum
+import random
 import os
+from enum import Enum
+import copy
+
+COLOURS = ('🟦', '🟥', '🟪', '🟩')
+
 
 class Movement(Enum):
     DOWN = 0
@@ -8,79 +13,112 @@ class Movement(Enum):
     ROTATE = 3
 
 
-class Game:
-    '''
-    The `Game` class represents a game board and provides methods to move and rotate a piece on the board.
-    '''
-    ROTATION_POSITIONS = [[(1,1),(0,0),(0,-2),(-1,-1)],
-                          [(2,0),(1,-1),(0,0),(-1,1)],
-                          [(1,1),(0,2),(0,0),(-1,-1)],
-                          [(1,-1),(0,0),(-1,1),(-2,0)]]
+class Board():
+    BOARD = [["⬜"]*10 for _ in range(10)]
 
     def __init__(self):
-        self.board = [["🟦", "⬜"*9],
-                      ["🟦", "🟦", "🟦", "⬜"*7]] + [["⬜"]*10 for _ in range(8)]
-
-        self.rotation = 0
+        self.boxes = self.BOARD
+        self.piece = Piece()
 
     def print_board(self) -> None:
+        # Esto es para borrar la pantalla en Windows, puedes ajustarlo para tu sistema operativo.
         os.system('cls')
-        for row in self.board:
-            print("".join(row))
+
+        # Hacer una copia temporal del tablero
+        temp_board = copy.deepcopy(self.boxes)
+
+        for position in self.piece.shape.position:
+            temp_board[position[1]][position[0]] = self.piece.colour
+
+        for row in temp_board:
+            print("".join(map(str, row)))
 
         print('\n')
 
-    def move_piece(self, movement: Movement)->None:
-        '''The `move_piece` function in Python takes a movement as input and updates the game board
-        accordingly, including rotating the piece if specified.
-        
-        Parameters
-        ----------
-        movement : Movement
-            The `movement` parameter is an instance of the `Movement` enum. It represents the type of
-        movement that should be applied to the piece. The possible values of the `Movement` enum are:
-        
-        Returns
-        -------
-            In the `move_piece` method, if the conditions in the `if` statement are not met (i.e.,
-        `new_row_ind` is greater than 9 or `new_column_ind` is less than 0 or greater than 9), the
-        method will return without making any changes to the board.
-        
-        '''
-        # Initializing an empty board
-        new_board = [["⬜"]*10 for _ in range(10)]
-        piece_position = 0
+    def update_board(self):
+        for position in self.piece.shape.position:
+            self.boxes[position[1]][position[0]] = self.piece.colour
 
+        self.piece.change_piece()
+
+    def move_piece(self, movement: Movement) -> None:
         if movement == Movement.ROTATE:
-            self.rotation = 0 if self.rotation == 3 else self.rotation+1
+            self.piece.rotation_state = 0 if self.piece.rotation_state == 3 else self.piece.rotation_state+1
 
-        # Running the original dashboard
-        for row_ind, row in enumerate(self.board):
-            for column_ind, box in enumerate(row):
-                if box == "🟦":
+        if self._movement_control(movement):
+            for box_index, box in enumerate(self.piece.shape.position):
+                match movement:
+                    case Movement.DOWN:
+                        box[1] += 1
+                    case Movement.RIGHT:
+                        box[0] += 1
+                    case Movement.LEFT:
+                        box[0] -= 1
+                    case Movement.ROTATE:
+                        box[0] += self.piece.shape.rotation[self.piece.rotation_state][box_index][0]
+                        box[1] += self.piece.shape.rotation[self.piece.rotation_state][box_index][1]
 
-                    new_row_ind = 0
-                    new_column_ind = 0
-
-                    match movement:
-                        case Movement.DOWN:
-                            new_column_ind = column_ind
-                            new_row_ind = row_ind + 1                            
-                        case Movement.RIGHT:
-                            new_column_ind = column_ind + 1
-                            new_row_ind = row_ind                            
-                        case Movement.LEFT:
-                            new_column_ind = column_ind - 1
-                            new_row_ind = row_ind                            
-                        case Movement.ROTATE:
-                            new_column_ind = column_ind + self.ROTATION_POSITIONS[self.rotation][piece_position][0]
-                            new_row_ind = row_ind + self.ROTATION_POSITIONS[self.rotation][piece_position][1]
-                            piece_position+=1
-
-                    if new_row_ind <= 9 and (new_column_ind >= 0 and new_column_ind <= 9):
-                        new_board[new_row_ind][new_column_ind] = "🟦"
-                    else:
-                        return
-
-        self.board = new_board
         self.print_board()
+
+    def _movement_control(self, movement: Movement) -> bool:
+        for box in self.piece.shape.position:
+            match movement:
+                case Movement.DOWN:
+                    if box[1] >= 9:
+                        self.update_board()
+                        return False
+                case Movement.RIGHT:
+                    if box[0] >= 9:
+                        return False
+                case Movement.LEFT:
+                    if box[0] <= 0:
+                        return False
+        return True
+
+
+class Piece:
+    def __init__(self):
+        self.colour = COLOURS[random.randint(0, len(COLOURS)-1)]
+        self.shape = self._random_shape()
+        self.rotation_state = 0
+
+    def _random_shape(self):
+        # Lista de clases de piezas disponibles
+        pieces = [_JBlock, _IBlock, _LBlock]
+
+        # Selecciona una clase de pieza aleatoria
+        selected_piece = random.choice(pieces)
+
+        return selected_piece()
+
+    def change_piece(self):
+        self.colour = COLOURS[random.randint(0, len(COLOURS)-1)]
+        self.shape = self._random_shape()
+        self.rotation_state = 0
+
+
+class _JBlock:
+    def __init__(self):
+        self.position = [[0, 0], [0, 1], [1, 1], [2, 1]]
+        self.rotation = [[(0, -2), (-1, -1), (0, 0), (1, 1)],
+                         [(2, 0), (1, -1), (0, 0), (-1, 1)],
+                         [(0, 2), (1, 1), (0, 0), (-1, -1)],
+                         [(-2, 0), (-1, 1), (0, 0), (1, -1)]]
+
+
+class _IBlock:
+    def __init__(self):
+        self.position = [[0, 1], [1, 1], [2, 1], [3, 1]]
+        self.rotation = [[(-1, -2), (0, -1), (1, 0), (2, 1)],
+                         [(2, -1), (1, 0), (0, 1), (-1, 2)],
+                         [(1, 2), (0, 1), (-1, 0), (-2, -1)],
+                         [(-2, 1), (-1, 0), (0, -1), (1, -2)]]
+
+
+class _LBlock:
+    def __init__(self):
+        self.position = [[2, 0], [2, 1], [1, 1], [0, 1]]
+        self.rotation = [[[2, 0], [1, 1], (0, 0), (-1, -1)],
+                         [(0, 2), (-1, 1), (0, 0), (1, -1)],
+                         [(-2, 0), (-1, -1), (0, 0), (1, 1)],
+                         [(0, -2), (1, -1), (0, 0), (-1, 1)]]
