@@ -2,6 +2,7 @@ import random
 import os
 from enum import Enum
 import copy
+import time
 
 
 COLOURS = ('🟦', '🟥', '🟪', '🟩', '🟧', '🟨')
@@ -26,7 +27,7 @@ class Board():
     The `Board` class represents a game board and manages the movement and placement of pieces on the
     board.'''
 
-    BOARD = [["⬜"]*10 for _ in range(10)]
+    BOARD = [["⬜"]*10 for _ in range(20)]
 
     def __init__(self):
         self.boxes = self.BOARD
@@ -70,21 +71,25 @@ class Board():
                         box[1] += self.piece.shape.rotation[self.piece.rotation_state][box_index][1]
                         self._rotation_control(box)
 
+        self._full_row_control()
         self.print_board()
+
+    # Control functions
 
     def _is_valid_move(self, movement: Movement) -> bool:
         for box in self.piece.shape.position:
             match movement:
                 case Movement.DOWN:
-                    if box[1] >= 9:
+                    if box[1] >= (len(self.boxes)-1) or self.boxes[box[1] + 1][box[0]] != "⬜":
                         self.update_board()
                         return False
                 case Movement.RIGHT:
-                    if box[0] >= 9:
+                    if box[0] >= (len(self.boxes[0])-1) or self.boxes[box[1]][box[0] + 1] != "⬜":
                         return False
                 case Movement.LEFT:
-                    if box[0] <= 0:
+                    if box[0] <= 0 or self.boxes[box[1]][box[0] - 1] != "⬜":
                         return False
+
         return True
 
     def _rotation_control(self, box) -> None:
@@ -99,6 +104,17 @@ class Board():
         if box[1] > 9:
             for item in self.piece.shape.position:
                 item[1] -= 1
+
+    def _full_row_control(self):
+        full_rows = []
+        for i, row in enumerate(self.boxes):
+            if all(cell != "⬜" for cell in row):
+                full_rows.append(i)
+
+        for row_index in full_rows:
+            # Removing the entire row and adding a new empty row at the top
+            del self.boxes[row_index]
+            self.boxes.insert(0, ["⬜"] * 10)
 
 
 class Piece:
