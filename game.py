@@ -1,5 +1,3 @@
-from game import _JBlock, _IBlock, _LBlock, _SquareBlock, _TBlock, _ZBlock, _SBlock
-from typing import Union
 import random
 import os
 from enum import Enum
@@ -109,7 +107,7 @@ class Piece:
         self.shape = self._random_shape()
         self.rotation_state = 0
 
-    def _random_shape(self) -> Union[_JBlock, _IBlock, _LBlock, _SquareBlock, _TBlock, _ZBlock, _SBlock]:
+    def _random_shape(self):
         '''The function randomly selects and returns an instance of a shape class from a list of available
         shapes.
 

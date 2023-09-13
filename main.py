@@ -1,5 +1,5 @@
 import keyboard
-from game import Piece, Board, Movement
+from game import *
 
 
 def main():
@@ -10,9 +10,9 @@ def main():
     board.print_board()
 
     key = None
-
+    end = False
     # The Key 'escape' exit the game
-    while (key != 'esc'):
+    while (key != 'esc' and not end):
         listener = keyboard.read_event()
 
         if listener.event_type == keyboard.KEY_DOWN:
