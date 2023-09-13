@@ -30,8 +30,6 @@ def main():
             elif key == 'space':
                 board.move_piece(Movement.ROTATE)
 
-        print(time.time() - board.last_fall_time)
-        # Check if the top row is occupied
         for cell in board.boxes[0]:
             if cell != "⬜":
                 end = True
